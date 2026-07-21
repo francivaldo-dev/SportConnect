@@ -1,0 +1,128 @@
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, Image, TextInput, ActivityIndicator } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { supabase } from '../../services/supabase';
+
+export function HubScreen({ navigation }: any) {
+  const [torneios, setTorneios] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchTorneios();
+  }, []);
+
+  const fetchTorneios = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('torneios')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setTorneios(data || []);
+    } catch (error) {
+      console.error("Erro ao buscar torneios:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-[#121212]">
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 80 }}>
+        
+        {/* Header */}
+        <View className="px-6 pt-6 pb-4">
+          <Text className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Encontre Sua Arena</Text>
+          <Text className="text-gray-500 dark:text-gray-400 text-base">
+            Participe de competições de elite e acompanhe sua ascensão rumo à glória.
+          </Text>
+        </View>
+
+        {/* Chips de Categorias */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} className="px-6 mb-6">
+          <TouchableOpacity className="bg-[#005BBB] dark:bg-[#82A0D8] px-4 py-2 rounded-full mr-3">
+            <Text className="text-white dark:text-[#121212] font-bold">Todos os Esportes</Text>
+          </TouchableOpacity>
+          <TouchableOpacity className="bg-white dark:bg-[#2A2A2A] border border-gray-200 dark:border-transparent px-4 py-2 rounded-full mr-3 shadow-sm">
+            <Text className="text-gray-600 dark:text-gray-300 font-semibold">Futebol</Text>
+          </TouchableOpacity>
+          <TouchableOpacity className="bg-white dark:bg-[#2A2A2A] border border-gray-200 dark:border-transparent px-4 py-2 rounded-full mr-6 shadow-sm">
+            <Text className="text-gray-600 dark:text-gray-300 font-semibold">Basquete</Text>
+          </TouchableOpacity>
+        </ScrollView>
+
+        {/* Filtros */}
+        <View className="px-6 mb-8 space-y-3">
+          <View className="flex-row items-center bg-white dark:bg-[#1A1A1A] rounded-lg px-4 py-3 border border-gray-200 dark:border-[#2A2A2A] mb-3 shadow-sm">
+            <Ionicons name="location-outline" size={20} color="#888" className="mr-3" />
+            <TextInput 
+              placeholder="Localização" 
+              placeholderTextColor="#888" 
+              className="flex-1 text-gray-900 dark:text-white ml-2"
+            />
+          </View>
+        </View>
+
+        {/* Lista de Torneios */}
+        {loading ? (
+          <ActivityIndicator size="large" color="#005BBB" className="mt-10" />
+        ) : torneios.length === 0 ? (
+          <View className="items-center mt-10">
+            <Ionicons name="sad-outline" size={48} color="#888" />
+            <Text className="text-gray-500 dark:text-gray-400 mt-4">Nenhum torneio encontrado.</Text>
+          </View>
+        ) : (
+          torneios.map((torneio) => (
+            <View key={torneio.id} className="mx-6 bg-white dark:bg-[#1A1A1A] rounded-xl overflow-hidden border border-gray-200 dark:border-[#2A2A2A] mb-6 shadow-sm">
+              <View className="h-40 bg-gray-200 dark:bg-gray-800 relative">
+                <Image 
+                  source={{ uri: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?q=80&w=600&auto=format&fit=crop' }} 
+                  className="w-full h-full opacity-80" 
+                />
+                <View className="absolute top-3 left-3 bg-black/70 dark:bg-[#2A2A2A] px-3 py-1 rounded-full">
+                  <Text className="text-white text-xs font-bold uppercase">{torneio.modalidade}</Text>
+                </View>
+              </View>
+              <View className="p-5">
+                <Text className="text-xl font-bold text-gray-900 dark:text-white mb-1">{torneio.nome}</Text>
+                <View className="flex-row items-center mb-4">
+                  <Ionicons name="location-outline" size={14} color="#888" />
+                  <Text className="text-gray-500 dark:text-gray-400 text-xs font-semibold ml-1">{torneio.local}</Text>
+                </View>
+                
+                <View className="flex-row justify-between bg-gray-50 dark:bg-[#121212] p-3 rounded-lg border border-gray-200 dark:border-[#2A2A2A] mb-5">
+                  <View>
+                    <Text className="text-gray-500 text-[10px] mb-1 font-bold">VALOR INSCRIÇÃO</Text>
+                    <Text className="text-[#005BBB] dark:text-[#FFD700] font-bold text-lg">R$ {torneio.valor_inscricao}</Text>
+                  </View>
+                  <View className="items-end">
+                    <Text className="text-gray-500 text-[10px] mb-1 font-bold">VAGAS TOTAIS</Text>
+                    <Text className="text-gray-900 dark:text-white font-bold text-sm mt-1">{torneio.numero_max_times}</Text>
+                  </View>
+                </View>
+
+                <View className="flex-row justify-between">
+                  <TouchableOpacity 
+                    onPress={() => navigation.navigate('TeamRegistration', { torneioId: torneio.id })}
+                    className="flex-1 bg-white dark:bg-transparent border border-gray-300 dark:border-gray-600 rounded-lg py-3 items-center mr-2">
+                    <Text className="text-gray-700 dark:text-white font-bold text-xs">Inscrever Equipe</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity 
+                    onPress={() => navigation.navigate('Bracket', { torneioId: torneio.id })}
+                    className="flex-1 bg-[#005BBB] dark:bg-[#82A0D8] rounded-lg py-3 items-center ml-2">
+                    <Text className="text-white dark:text-[#121212] font-bold text-xs">Ver Chaves</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          ))
+        )}
+
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
